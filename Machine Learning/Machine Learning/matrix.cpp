@@ -70,6 +70,46 @@ const matrix::num& matrix::operator()(matrix::size_type row, matrix::size_type c
 	return this->_data[this->width() * row + column];
 }
 
+matrix::num& matrix::operator()(matrix::size_type row, matrix::size_type column) {
+#ifdef _DEBUG
+	if (this->width() < column || this->height() < row || row < 0 || column < 0) {
+		throw std::out_of_range("out of range");
+	}
+#endif
+
+	return this->_data[this->width() * row + column];
+}
+
+//seperated dot product function
+matrix matrix::operator*(const matrix& rhs) const {
+#ifdef _DEBUG
+	if (this->width() != rhs.height()) {
+		throw std::invalid_argument("matrix dimensions are incompatible");
+	}
+#endif
+
+	matrix::size_type lhsheight = this->height();
+	matrix::size_type rhswidth = rhs.width();
+
+	matrix result(lhsheight, rhswidth);
+	for (matrix::size_type i = 0; i != lhsheight; ++i) {
+		for (matrix::size_type j = 0; j != rhswidth; ++j) {
+			result(i, j) = dotproduct(*this, rhs, i, j);
+		}
+	}
+
+	return result;
+}
+
+matrix::num matrix::dotproduct(const matrix& first, const matrix& second, matrix::size_type row, matrix::size_type column) const {
+	matrix::num sum = 0;
+	matrix::size_type vectorlength = first.width();
+	for (matrix::size_type k = 0; k != vectorlength; ++k) {
+		sum += first(row, k) * second(k, column);
+	}
+	return sum;
+}
+
 matrix::size_type matrix::height() const {
 	return this->size()/this->width();
 }

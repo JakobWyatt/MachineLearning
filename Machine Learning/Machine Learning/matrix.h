@@ -36,8 +36,12 @@ public:
 
 	//prints the matrix to the output stream
 	friend std::ostream& operator<<(std::ostream& cout, const matrix& toprint);
-	//returns the specified element of the matrix, using zero-indexing
+	//returns a const reference to the specified element of the matrix, using zero-indexing
 	const num& operator()(size_type row, size_type column) const;
+	//returns a reference to the specified element of the matrix, using zero-indexing
+	num& operator()(size_type row, size_type column);
+	//multiplies two matricies together
+	matrix operator*(const matrix& rhs) const;
 
 	//returns the height of the matrix
 	size_type height() const;
@@ -49,6 +53,9 @@ public:
 private:
 	std::vector<num> _data;
 	size_type _width;
+
+	//seperate dotproduct function for matrix multiplication
+	matrix::num dotproduct(const matrix& first, const matrix& second, matrix::size_type row, matrix::size_type column) const;
 };
 
 }

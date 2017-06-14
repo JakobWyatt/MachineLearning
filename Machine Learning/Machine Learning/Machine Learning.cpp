@@ -31,6 +31,14 @@ double randomint() {
 	return intdist(re);
 }
 
+//creates a random double centred around 0 wth standard deviation 1
+double random() {
+	static std::random_device rd;
+	static std::default_random_engine re(rd());
+	static std::normal_distribution<double> dist(0, 1);
+	return dist(re);
+}
+
 int main() {
 
 
