@@ -13,16 +13,21 @@
 //limitations under the License.
 
 #include "stdafx.h"
-#include "matrix.h"
+#include "math.h"
 
 #include <vector>
 #include <iostream>
 #include <stdexcept>
 #include <functional>
+#include <random>
 
 //we will only error-check if the project is in debug mode
 //we use the _DEBUG macro to check for this
-namespace matrix {
+namespace math {
+
+matrix::matrix() : _data(0), _width(0) {
+
+}
 
 matrix::matrix(matrix::size_type height, matrix::size_type width) : _data(height * width), _width(width) {
 #ifdef _DEBUG
@@ -47,6 +52,20 @@ matrix::matrix(matrix::size_type height, matrix::size_type width, std::function<
 	}
 }
 
+matrix::matrix(std::vector<num> data, matrix::size_type width) : _data(data), _width(width) {
+#ifdef _DEBUG
+	if (width <= 0 || data.size() <= 0) {
+		throw std::invalid_argument("empty matrix initialization");
+	}
+#endif
+}
+
+matrix matrix::onehotmatrix(matrix::size_type height, matrix::size_type width, matrix::size_type row, matrix::size_type column) {
+	matrix result(height, width);
+	result(row, column) = 1;
+	return result;
+}
+
 //TODO: make different rows line up
 std::ostream& operator<<(std::ostream& cout, const matrix& toprint) {
 	matrix::size_type height = toprint.height();
@@ -60,7 +79,7 @@ std::ostream& operator<<(std::ostream& cout, const matrix& toprint) {
 	return cout;
 }
 
-const matrix::num& matrix::operator()(matrix::size_type row, matrix::size_type column) const {
+const num& matrix::operator()(matrix::size_type row, matrix::size_type column) const {
 #ifdef _DEBUG
 	if (this->width() < column || this->height() < row || row < 0 || column < 0) {
 		throw std::out_of_range("out of range");
@@ -70,7 +89,7 @@ const matrix::num& matrix::operator()(matrix::size_type row, matrix::size_type c
 	return this->_data[this->width() * row + column];
 }
 
-matrix::num& matrix::operator()(matrix::size_type row, matrix::size_type column) {
+num& matrix::operator()(matrix::size_type row, matrix::size_type column) {
 #ifdef _DEBUG
 	if (this->width() < column || this->height() < row || row < 0 || column < 0) {
 		throw std::out_of_range("out of range");
@@ -80,7 +99,6 @@ matrix::num& matrix::operator()(matrix::size_type row, matrix::size_type column)
 	return this->_data[this->width() * row + column];
 }
 
-//seperated dot product function
 matrix matrix::operator*(const matrix& rhs) const {
 #ifdef _DEBUG
 	if (this->width() != rhs.height()) {
@@ -101,8 +119,29 @@ matrix matrix::operator*(const matrix& rhs) const {
 	return result;
 }
 
-matrix::num matrix::dotproduct(const matrix& first, const matrix& second, matrix::size_type row, matrix::size_type column) const {
-	matrix::num sum = 0;
+void matrix::multiply(const matrix& lhs, const matrix& rhs, matrix& buffer) {
+#ifdef _DEBUG
+	if (lhs.width() != rhs.height()) {
+		throw std::invalid_argument("matrix dimensions are incompatible");
+	}
+	if (buffer.height() != lhs.height() || buffer.width() != rhs.width()) {
+		throw std::invalid_argument("buffer matrix has incompatible size");
+	}
+#endif
+
+	matrix::size_type lhsheight = lhs.height();
+	matrix::size_type rhswidth = rhs.width();
+
+	matrix result(lhsheight, rhswidth);
+	for (matrix::size_type i = 0; i != lhsheight; ++i) {
+		for (matrix::size_type j = 0; j != rhswidth; ++j) {
+			buffer(i, j) = dotproduct(lhs, rhs, i, j);
+		}
+	}
+}
+
+num matrix::dotproduct(const matrix& first, const matrix& second, matrix::size_type row, matrix::size_type column) {
+	num sum = 0;
 	matrix::size_type vectorlength = first.width();
 	for (matrix::size_type k = 0; k != vectorlength; ++k) {
 		sum += first(row, k) * second(k, column);
@@ -120,6 +159,14 @@ matrix::size_type matrix::width() const {
 
 matrix::size_type matrix::size() const {
 	return this->_data.size();
+}
+
+//TODO: remove use of global static while maintaining efficiency
+num standarddist() {
+	static std::random_device rd;
+	static std::default_random_engine re(rd());
+	static std::normal_distribution<num> nd(0, 1);
+	return nd(re);
 }
 
 }

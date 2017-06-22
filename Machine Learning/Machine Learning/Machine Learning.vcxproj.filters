@@ -24,7 +24,10 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="matrix.h">
+    <ClInclude Include="math.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nn.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -35,7 +38,10 @@
     <ClCompile Include="Machine Learning.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="matrix.cpp">
+    <ClCompile Include="math.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nn.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

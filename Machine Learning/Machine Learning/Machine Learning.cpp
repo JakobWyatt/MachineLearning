@@ -21,26 +21,43 @@
 #include <chrono>
 #include <random>
 
-#include "matrix.h"
+#include "math.h"
+#include "nn.h"
 
-//creates a random integer between 0 and 10 inclusive (for testing)
+//creates a random integer between -5 and 5 inclusive (for testing)
 double randomint() {
 	std::random_device rd;
 	std::default_random_engine re(rd());
-	std::uniform_int_distribution<int> intdist(0, 10);
+	std::uniform_int_distribution<int> intdist(-5, 5);
 	return intdist(re);
 }
 
-//creates a random double centred around 0 wth standard deviation 1
-double random() {
-	static std::random_device rd;
-	static std::default_random_engine re(rd());
-	static std::normal_distribution<double> dist(0, 1);
-	return dist(re);
-}
-
 int main() {
+	
 
+	//generic code for testing speeds
+	/*
+	std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+	math::matrix a(40, 750, math::standarddist);
+	math::matrix b(750, 1, math::standarddist);
+	for (int i = 0; i != 1000; ++i) {
+		math::matrix l = a * b;
+	}
+	std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+	std::chrono::steady_clock::duration duration1 = t2 - t1;
+	std::cout << duration1.count() << "\n";
+
+	std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+	math::matrix c(40, 750, math::standarddist);
+	math::matrix d(750, 1, math::standarddist);
+	math::matrix e(40, 1);
+	for (int j = 0; j != 1000; ++j) {
+		math::matrix::multiply(c, d, e);
+	}
+	std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
+	std::chrono::steady_clock::duration duration2 = t4 - t3;
+	std::cout << duration2.count();
+	*/
 
 	return 0;
 }
