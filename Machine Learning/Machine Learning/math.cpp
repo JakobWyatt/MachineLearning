@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <functional>
 #include <random>
+#include <cmath>
 
 //we will only error-check if the project is in debug mode
 //we use the _DEBUG macro to check for this
@@ -52,7 +53,7 @@ matrix::matrix(matrix::size_type height, matrix::size_type width, std::function<
 	}
 }
 
-matrix::matrix(std::vector<num> data, matrix::size_type width) : _data(data), _width(width) {
+matrix::matrix(const std::vector<num>& data, matrix::size_type width) : _data(data), _width(width) {
 #ifdef _DEBUG
 	if (width <= 0 || data.size() <= 0) {
 		throw std::invalid_argument("empty matrix initialization");
@@ -81,7 +82,7 @@ std::ostream& operator<<(std::ostream& cout, const matrix& toprint) {
 
 const num& matrix::operator()(matrix::size_type row, matrix::size_type column) const {
 #ifdef _DEBUG
-	if (this->width() < column || this->height() < row || row < 0 || column < 0) {
+	if (this->width() <= column || this->height() <= row || row < 0 || column < 0) {
 		throw std::out_of_range("out of range");
 	}
 #endif
@@ -91,12 +92,32 @@ const num& matrix::operator()(matrix::size_type row, matrix::size_type column) c
 
 num& matrix::operator()(matrix::size_type row, matrix::size_type column) {
 #ifdef _DEBUG
-	if (this->width() < column || this->height() < row || row < 0 || column < 0) {
+	if (this->width() <= column || this->height() <= row || row < 0 || column < 0) {
 		throw std::out_of_range("out of range");
 	}
 #endif
 
 	return this->_data[this->width() * row + column];
+}
+
+const num& matrix::operator[](matrix::size_type element) const {
+#ifdef _DEBUG
+	if (element < 0 || element >= this->size()) {
+		throw std::out_of_range("out of range");
+	}
+#endif
+
+	return this->_data[element];
+}
+
+num& matrix::operator[](matrix::size_type element) {
+#ifdef _DEBUG
+	if (element < 0 || element >= this->size()) {
+		throw std::out_of_range("out of range");
+	}
+#endif
+
+	return this->_data[element];
 }
 
 matrix matrix::operator*(const matrix& rhs) const {
@@ -119,6 +140,16 @@ matrix matrix::operator*(const matrix& rhs) const {
 	return result;
 }
 
+matrix matrix::operator()(std::function<num(num)> func) const {
+	matrix result(this->height(), this->width());
+	matrix::size_type size = this->size();
+	for (matrix::size_type i = 0; i != size; ++i) {
+		result[i] = func(this->operator[](i));
+	}
+
+	return result;
+}
+
 void matrix::multiply(const matrix& lhs, const matrix& rhs, matrix& buffer) {
 #ifdef _DEBUG
 	if (lhs.width() != rhs.height()) {
@@ -126,6 +157,12 @@ void matrix::multiply(const matrix& lhs, const matrix& rhs, matrix& buffer) {
 	}
 	if (buffer.height() != lhs.height() || buffer.width() != rhs.width()) {
 		throw std::invalid_argument("buffer matrix has incompatible size");
+	}
+	if (&lhs == &buffer) {
+		throw std::invalid_argument("buffer matrix is the same object as the left hand side argument");
+	}
+	if (&rhs == &buffer) {
+		throw std::invalid_argument("buffer matrix is the same object as the right hand side argument");
 	}
 #endif
 
@@ -137,6 +174,19 @@ void matrix::multiply(const matrix& lhs, const matrix& rhs, matrix& buffer) {
 		for (matrix::size_type j = 0; j != rhswidth; ++j) {
 			buffer(i, j) = dotproduct(lhs, rhs, i, j);
 		}
+	}
+}
+
+void matrix::function(std::function<num(num)> func, const matrix& input, matrix& buffer) {
+#ifdef _DEBUG
+	if (buffer.height() != input.height() || buffer.width() != input.width()) {
+		throw std::invalid_argument("buffer matrix has incompatible size");
+	}
+#endif
+	
+	matrix::size_type size = input.size();
+	for (matrix::size_type i = 0; i != size; ++i) {
+		buffer[i] = func(input[i]);
 	}
 }
 
@@ -167,6 +217,10 @@ num standarddist() {
 	static std::default_random_engine re(rd());
 	static std::normal_distribution<num> nd(0, 1);
 	return nd(re);
+}
+
+num sigmoid(num input) {
+	return (1/(1 + std::exp(-input)));
 }
 
 }

@@ -38,7 +38,7 @@ public:
 	//initializes a matrix with specified dimensions, and fills this matrix using the given function
 	matrix(size_type height, size_type width, std::function<num()> func);
 	//initializes a matrix given a data vector and a width
-	matrix(std::vector<num> data, size_type width);
+	matrix(const std::vector<num>& data, size_type width);
 
 	//initializes a matrix such that all elements are zero except for one specified element, set to one
 	static matrix onehotmatrix(size_type height, size_type width, size_type row, size_type column);
@@ -49,11 +49,19 @@ public:
 	const num& operator()(size_type row, size_type column) const;
 	//returns a reference to the specified element of the matrix
 	num& operator()(size_type row, size_type column);
+	//returns a const reference to the specified data element
+	const num& operator[](size_type element) const;
+	//returns a reference to the specified data element
+	num& operator[](size_type element);
 	//multiplies two matricies together and returns the result
 	matrix operator*(const matrix& rhs) const;
+	//applies a function to every element in the matrix
+	matrix operator()(std::function<num (num)> func) const;
 
 	//multiplies two matricies together and writes the result to a buffer
 	static void multiply(const matrix& lhs, const matrix& rhs, matrix& buffer);
+	//applies a function to every element in a matrix and writes the result to a buffer
+	static void function(std::function<num(num)> func, const matrix& input, matrix& buffer);
 
 	//returns the height of the matrix
 	size_type height() const;
@@ -72,6 +80,8 @@ private:
 
 //returns a random num from the standard distribution (mean 0, SD 1)
 num standarddist();
+//returns the sigmoid function of a number
+num sigmoid(num input);
 
 }
 

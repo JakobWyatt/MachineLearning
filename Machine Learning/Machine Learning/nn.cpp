@@ -20,6 +20,8 @@
 #include <utility>
 #include <fstream>
 #include <iterator>
+#include <functional>
+#include <memory>
 
 #include "math.h"
 
@@ -27,13 +29,13 @@
 //we use the _DEBUG macro to check for this
 namespace nn {
 
-data::data(int flag) {
+data::data(int flag) : _data(0) {
 	switch (flag) {
-	case mnisttest:
+	case datasets::mnisttest:
 	{
 		_data = mnisttestload();
 	}
-	case mnisttrain:
+	case datasets::mnisttrain:
 	{
 		_data = mnisttrainload();
 	}
@@ -46,12 +48,21 @@ data::data(int flag) {
 	}
 }
 
+data::size_type data::size() const {
+	return this->_data.size();
+}
 
 std::vector<std::pair<math::matrix, math::matrix>> data::mnisttestload() {
 	std::ifstream images("t10k-images.idx3-ubyte", std::ios::binary);
-	std::vector<unsigned char> imagesvec((std::istreambuf_iterator<char>(images)), std::istreambuf_iterator<char>());
-	
 	std::ifstream labels("t10k-labels.idx1-ubyte", std::ios::binary);
+
+#ifdef _DEBUG
+	if (!images.is_open() || !labels.is_open()) {
+		throw std::runtime_error("could not open file");
+	}
+#endif
+
+	std::vector<unsigned char> imagesvec((std::istreambuf_iterator<char>(images)), std::istreambuf_iterator<char>());
 	std::vector<unsigned char> labelsvec((std::istreambuf_iterator<char>(labels)), std::istreambuf_iterator<char>());
 
 	std::vector<std::pair<math::matrix, math::matrix>> result(10000);
@@ -70,9 +81,15 @@ std::vector<std::pair<math::matrix, math::matrix>> data::mnisttestload() {
 
 std::vector<std::pair<math::matrix, math::matrix>> data::mnisttrainload() {
 	std::ifstream images("train-images.idx3-ubyte", std::ios::binary);
-	std::vector<unsigned char> imagesvec((std::istreambuf_iterator<char>(images)), std::istreambuf_iterator<char>());
-
 	std::ifstream labels("train-labels.idx1-ubyte", std::ios::binary);
+
+#ifdef _DEBUG
+	if (!images.is_open() || !labels.is_open()) {
+		throw std::runtime_error("could not open file");
+	}
+#endif
+
+	std::vector<unsigned char> imagesvec((std::istreambuf_iterator<char>(images)), std::istreambuf_iterator<char>());
 	std::vector<unsigned char> labelsvec((std::istreambuf_iterator<char>(labels)), std::istreambuf_iterator<char>());
 
 	std::vector<std::pair<math::matrix, math::matrix>> result(60000);
@@ -88,5 +105,77 @@ std::vector<std::pair<math::matrix, math::matrix>> data::mnisttrainload() {
 
 	return result;
 }
+
+nn::nn(std::initializer_list<std::reference_wrapper<layer>> layers) : _data(0) {
+	std::initializer_list<std::reference_wrapper<layer>>::const_iterator end = layers.end();
+	for (std::initializer_list<std::reference_wrapper<layer>>::const_iterator i = layers.begin(); i != end; ++i) {
+		_data.push_back(std::move(i->get().clone()));
+	}
+
+#ifdef _DEBUG
+	std::vector<std::unique_ptr<layer>>::size_type size = _data.size();
+	if (size == 0) {
+		throw std::invalid_argument("no layers were given");
+	}
+	for (std::vector<std::unique_ptr<layer>>::size_type i = 0; i != size - 1; ++i) {
+		layer::size_type currentoutputwidth = _data[i]->outputwidth();
+		layer::size_type nextinputwidth = _data[i + 1]->inputwidth();
+		layer::size_type currentoutputheight = _data[i]->outputheight();
+		layer::size_type nextinputheight = _data[i + 1]->inputheight();
+		if (currentoutputwidth != nextinputwidth || currentoutputheight != nextinputheight) {
+			throw std::invalid_argument("layer sizes do not match");
+		}
+	}
+#endif
+}
+
+nn::size_type nn::size() const {
+	return this->_data.size();
+}
+
+//preallocation is not used, as in this function, the output is only evaluated once
+math::matrix nn::evaluate(const math::matrix& input) const {
+#ifdef _DEBUG
+	if (input.width() != this->_data[0]->inputwidth() || input.height() != this->_data[0]->inputheight()) {
+		throw std::invalid_argument("input size is incompatible");
+	}
+#endif
+
+	size_type size = this->size();
+	math::matrix result(input);
+	for (size_type i = 0; i != size; ++i) {
+		result = this->_data[i]->evaluate(result);
+	}
+
+	return result;
+}
+/*
+sigmoid::sigmoid(size_type height, size_type width) : _height(height), _width(width) {
+#ifdef _DEBUG
+	if (height <= 0 || width <= 0) {
+		throw std::invalid_argument("empty layer initialization");
+	}
+#endif
+}
+
+sigmoid::size_type sigmoid::inputwidth() const {
+	return this->_width;
+}
+
+sigmoid::size_type sigmoid::inputheight() const {
+	return this->_height;
+}
+
+sigmoid::size_type sigmoid::outputwidth() const {
+	return this->_width;
+}
+
+sigmoid::size_type sigmoid::outputheight() const {
+	return this->_height;
+}
+
+math::matrix sigmoid::evaluate(const math::matrix& input) const {
+	return math::matrix();
+} */
 
 }
