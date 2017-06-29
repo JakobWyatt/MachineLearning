@@ -17,7 +17,6 @@
 
 #include <vector>
 #include <utility>
-#include <functional>
 #include <memory>
 
 #include "math.h"
@@ -42,6 +41,9 @@ public:
 
 	//returns the width of the output matrix
 
+
+	//returns a const reference to the specified std::pair
+	const std::pair<math::matrix, math::matrix>& operator[](size_type element) const;
 
 	//common dataset flags
 	enum datasets {
@@ -92,7 +94,7 @@ public:
 	typedef std::vector<std::unique_ptr<layer>>::size_type size_type;
 
 	//initializes a neural network with an initializer list of layers
-	nn(std::initializer_list<std::reference_wrapper<layer>> layers);
+	nn(std::initializer_list<layer*> layers);
 
 	//returns the number of layers in the neuralnet
 	size_type size() const;
@@ -103,7 +105,7 @@ public:
 private:
 	std::vector<std::unique_ptr<layer>> _data;
 };
-/*
+
 //this layer applies the sigmoid activation function
 class sigmoid : public layer {
 public:
@@ -124,7 +126,7 @@ protected:
 private:
 	size_type _height;
 	size_type _width;
-}; */
+};
 
 }
 

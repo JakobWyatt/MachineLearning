@@ -20,7 +20,6 @@
 #include <utility>
 #include <fstream>
 #include <iterator>
-#include <functional>
 #include <memory>
 
 #include "math.h"
@@ -31,18 +30,21 @@ namespace nn {
 
 data::data(int flag) : _data(0) {
 	switch (flag) {
-	case datasets::mnisttest:
+	case mnisttest:
 	{
 		_data = mnisttestload();
+		break;
 	}
-	case datasets::mnisttrain:
+	case mnisttrain:
 	{
 		_data = mnisttrainload();
+		break;
 	}
 
 	default:
 	{
 		throw std::invalid_argument("invalid flag");
+		break;
 	}
 	
 	}
@@ -50,6 +52,16 @@ data::data(int flag) : _data(0) {
 
 data::size_type data::size() const {
 	return this->_data.size();
+}
+
+const std::pair<math::matrix, math::matrix>& data::operator[](data::size_type element) const {
+#ifdef _DEBUG
+	if (element < 0 || element >= this->size()) {
+		throw std::out_of_range("out of range");
+	}
+#endif
+
+	return this->_data[element];
 }
 
 std::vector<std::pair<math::matrix, math::matrix>> data::mnisttestload() {
@@ -106,10 +118,10 @@ std::vector<std::pair<math::matrix, math::matrix>> data::mnisttrainload() {
 	return result;
 }
 
-nn::nn(std::initializer_list<std::reference_wrapper<layer>> layers) : _data(0) {
-	std::initializer_list<std::reference_wrapper<layer>>::const_iterator end = layers.end();
-	for (std::initializer_list<std::reference_wrapper<layer>>::const_iterator i = layers.begin(); i != end; ++i) {
-		_data.push_back(std::move(i->get().clone()));
+nn::nn(std::initializer_list<layer*> layers) : _data(0) {
+	std::initializer_list<layer*>::const_iterator end = layers.end();
+	for (std::initializer_list<layer*>::const_iterator i = layers.begin(); i != end; ++i) {
+		_data.push_back(std::move((*i)->clone()));
 	}
 
 #ifdef _DEBUG
@@ -149,7 +161,7 @@ math::matrix nn::evaluate(const math::matrix& input) const {
 
 	return result;
 }
-/*
+
 sigmoid::sigmoid(size_type height, size_type width) : _height(height), _width(width) {
 #ifdef _DEBUG
 	if (height <= 0 || width <= 0) {
@@ -175,7 +187,31 @@ sigmoid::size_type sigmoid::outputheight() const {
 }
 
 math::matrix sigmoid::evaluate(const math::matrix& input) const {
-	return math::matrix();
-} */
+#ifdef _DEBUG
+	if (this->inputheight() != input.height() || this->inputwidth() != input.width()) {
+		throw std::invalid_argument("input matrix is incompatible");
+	}
+#endif
+
+	return input(math::sigmoid);
+}
+
+std::unique_ptr<layer> sigmoid::clone() const {
+	std::unique_ptr<layer> ptr(new sigmoid(*this));
+	return std::move(ptr);
+}
+
+void sigmoid::evaluate(const math::matrix& input, math::matrix& output) const {
+#ifdef _DEBUG
+	if (this->inputheight() != input.height() || this->inputwidth() != input.width()) {
+		throw std::invalid_argument("input matrix is incompatible");
+	}
+	if (this->outputheight() != output.height() || this->outputwidth() != output.width()) {
+		throw std::invalid_argument("output matrix is incompatible");
+	}
+#endif
+
+	math::matrix::function(math::sigmoid, input, output);
+}
 
 }
