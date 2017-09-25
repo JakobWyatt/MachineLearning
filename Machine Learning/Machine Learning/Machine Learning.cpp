@@ -20,6 +20,7 @@
 #include <iostream>
 #include <chrono>
 #include <random>
+#include <algorithm>
 
 #include "math.h"
 #include "nn.h"
@@ -33,13 +34,39 @@ double randomint() {
 }
 
 int main() {
+	nn::nn neuralnet({ &nn::weights(2, 3), &nn::biases(3, 1), &nn::sigmoid(3, 1), &nn::weights(3, 1), &nn::biases(1, 1), &nn::sigmoid(1, 1) });
+	nn::data XOR(nn::data::XOR);
+	std::cout << "Epoch 0: " << neuralnet.test(XOR, math::matrix::comparebool) << " / " << XOR.size() << " Cost: " << neuralnet.cost(XOR.shuffle().trim(5000))<<"\n";
 
+	for (int i = 0; i != 5000; ++i) {
+		neuralnet.train(XOR.shuffle(), 0.01, 30);
+		std::cout << "Epoch " << i << ": " << neuralnet.test(XOR, math::matrix::comparebool) << " / " << XOR.size() << "\n";
+		std::cout << "Cost: " << neuralnet.cost(XOR.shuffle().trim(5000)) << "\n";
+	}
+
+	/*
+	std::cout << "Initializing . . . ";
+	nn::nn neuralnet({ &nn::weights(784, 10), &nn::biases(10, 1), &nn::sigmoid(10, 1) });
+	std::cout << "done\n";
+
+	std::cout << "Reading data . . . ";
+	nn::data mnisttrain(nn::data::mnisttrain);
+	nn::data mnisttest(nn::data::mnisttest);
+	std::cout << "done\n";
+
+	std::cout << "Epoch 0: " << neuralnet.test(mnisttest) << " / " << mnisttest.size() << "\n";
+
+	for (int i = 1; i != 30; ++i) {
+		neuralnet.train(mnisttrain.shuffle(), 0.01, 30);
+		std::cout << "Epoch " << i << ": " << neuralnet.test(mnisttest) << " / " << mnisttest.size() << "\n";
+		std::cout << "Cost: " << neuralnet.cost(mnisttrain.shuffle().trim(5000)) << "\n";
+	} */
 
 	//generic code for testing speeds
 	/*
 	std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 	math::matrix a(40, 750, math::standarddist);
-	math::matrix b(750, 1, math::standarddist);
+	math::matrix b();
 	for (int i = 0; i != 1000; ++i) {
 		math::matrix l = a * b;
 	}

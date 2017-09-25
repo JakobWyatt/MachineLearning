@@ -18,6 +18,7 @@
 #include <vector>
 #include <utility>
 #include <memory>
+#include <functional>
 
 #include "math.h"
 
@@ -34,13 +35,18 @@ public:
 	//returns the size of the dataset
 	size_type size() const;
 	//returns the height of the input matrix
-
+	math::matrix::size_type inputheight() const;
 	//returns the width of the input matrix
-
+	math::matrix::size_type inputwidth() const;
 	//returns the height of the output matrix
-
+	math::matrix::size_type outputheight() const;
 	//returns the width of the output matrix
+	math::matrix::size_type outputwidth() const;
 
+	//returns a copy of the dataset that has been randomly shuffled
+	data shuffle() const;
+	//returns a trimmed version of the dataset
+	data trim(size_type size) const;
 
 	//returns a const reference to the specified std::pair
 	const std::pair<math::matrix, math::matrix>& operator[](size_type element) const;
@@ -50,19 +56,24 @@ public:
 		//mnist dataset can be found here: http://yann.lecun.com/exdb/mnist/
 		mnisttest,
 		mnisttrain,
+		XOR,
 	};
 
 private:
 	std::vector<std::pair<math::matrix, math::matrix>> _data;
 
+	//initializes a dataset given a vector of matrix pairs
+	data(std::vector<std::pair<math::matrix, math::matrix>> data);
+
 	//returns the mnist test data
-	std::vector<std::pair<math::matrix, math::matrix>> mnisttestload();
+	static std::vector<std::pair<math::matrix, math::matrix>> mnisttestload();
 	//returns the mnist training data
-	std::vector<std::pair<math::matrix, math::matrix>> mnisttrainload();
+	static std::vector<std::pair<math::matrix, math::matrix>> mnisttrainload();
+	//returns a randomly generated set of XOR's
+	static std::vector<std::pair<math::matrix, math::matrix>> generateXOR();
 };
 
 //abstract base layer class
-//all inherited layer classes SHOULD BE THREADSAFE
 class layer {
 public:
 	typedef math::matrix::size_type size_type;
@@ -83,7 +94,21 @@ public:
 protected:
 	//returns a pointer to a dynamically allocated copy of the object
 	virtual std::unique_ptr<layer> clone() const = 0;
+	//dynamically allocates any memory the layer needs within a minibatch
+	virtual void* allocateminibatch() const = 0;
+	//deallocates this memory
+	virtual void deallocateminibatch(void* minibatchptr) const = 0;
+	//dynamically allocates any memory the layer needs within a training iteration
+	virtual void* allocateiteration() const = 0;
+	//deallocates this memory
+	virtual void deallocateiteration(void* iterationptr) const = 0;
 
+	//updates our neuralnet given a pointer to the data accumalated over the minibatch, and a learning rate
+	virtual void update(void* minibatchptr, math::num learningrate) = 0;
+	//evaluates the output of a layer, and prepares for a backprop
+	virtual void feedforward(const math::matrix& input, math::matrix& output, void* iterationptr, void* minibatchptr) const = 0;
+	//backpropagates the error through our network, and prepares for an update
+	virtual void backprop(const math::matrix& errorin, math::matrix& errorout, void* iterationptr, void* minibatchptr) const = 0;
 	//evaluates the output of a layer, and writes that output to a buffer
 	virtual void evaluate(const math::matrix& input, math::matrix& output) const = 0;
 };
@@ -101,31 +126,162 @@ public:
 
 	//evaluates the output of the neuralnet
 	math::matrix evaluate(const math::matrix& input) const;
+	//trains the neuralnet given learning data, learning rate, and a batchsize
+	//is threadsafe
+	void train(const data& learningdata, math::num learningrate, data::size_type batchsize);
+	//returns the number of successfully evaluated matricies from a data set
+	//the second argument is a function that takes the real output and the nn output
+	//and returns true if the output is deemed "correct",
+	//as well as a buffer the size of the output matrix that can be written into if needs be
+	data::size_type test(const data& input, std::function<bool(const math::matrix& correct, const math::matrix& output, math::matrix& buffer)> compare = math::matrix::comparemax) const;
+	//returns the average cost over a dataset
+	math::num cost(const data& input, std::function<math::num(const math::matrix& correct, const math::matrix& output)> cost = math::matrix::quadraticcost);
 
 private:
 	std::vector<std::unique_ptr<layer>> _data;
+
+	//updates all the layers in a neuralnet
+	void update(const std::vector<void*>& minibatch, math::num learningrate);
+
+	//dynamically allocates any memory the layers need within a minibatch
+	std::vector<void*> allocateminibatch() const;
+	//deallocates this memory
+	void deallocateminibatch(const std::vector<void*>& minibatchptr) const;
+	//dynamically allocates any memory the layers need within a training iteration
+	std::vector<void*> allocateiteration() const;
+	//deallocates this memory
+	void deallocateiteration(const std::vector<void*>& iterationptr) const;
 };
 
 //this layer applies the sigmoid activation function
 class sigmoid : public layer {
 public:
+	//initializes a sigmoid layer with a height and width
 	sigmoid(size_type height, size_type width);
 
-	size_type inputwidth() const;
-	size_type inputheight() const;
-	size_type outputwidth() const;
-	size_type outputheight() const;
+	//returns the input width of the layer
+	virtual size_type inputwidth() const;
+	//returns the input height of the layer
+	virtual size_type inputheight() const;
+	//returns the output width of the layer
+	virtual size_type outputwidth() const;
+	//returns the output height of the layer
+	virtual size_type outputheight() const;
 
-	math::matrix evaluate(const math::matrix& input) const;
+	//evaluates the output of a layer
+	virtual math::matrix evaluate(const math::matrix& input) const;
 
 protected:
-	std::unique_ptr<layer> clone() const;
+	//returns a pointer to a dynamically allocated copy of the object
+	virtual std::unique_ptr<layer> clone() const;
+	//dynamically allocates any memory the layer needs within a minibatch
+	virtual void* allocateminibatch() const;
+	//deallocates this memory
+	virtual void deallocateminibatch(void* minibatchptr) const;
+	//dynamically allocates any memory the layer needs within a training iteration
+	virtual void* allocateiteration() const;
+	//deallocates this memory
+	virtual void deallocateiteration(void* iterationptr) const;
 
-	void evaluate(const math::matrix& input, math::matrix& output) const;
+	//updates our neuralnet given a pointer to the data accumalated over the minibatch, and a learning rate
+	virtual void update(void* minibatchptr, math::num learningrate);
+	//evaluates the output of a layer, and prepares for a backprop
+	virtual void feedforward(const math::matrix& input, math::matrix& output, void* iterationptr, void* minibatchptr) const;
+	//backpropagates the error through our network, and prepares for an update
+	virtual void backprop(const math::matrix& errorin, math::matrix& errorout, void* iterationptr, void* minibatchptr) const;
+	//evaluates the output of a layer, and writes that output to a buffer
+	virtual void evaluate(const math::matrix& input, math::matrix& output) const;
 
 private:
 	size_type _height;
 	size_type _width;
+};
+
+//this layer applies a weights matrix
+class weights : public layer {
+public:
+	//initializes a weights layer with an input size, output size, and a function
+	//this function determines how the weights matrix will be filled
+	weights(size_type inputheight, size_type outputheight, std::function<math::num()> func = math::standarddist);
+
+	//returns the input width of the layer
+	virtual size_type inputwidth() const;
+	//returns the input height of the layer
+	virtual size_type inputheight() const;
+	//returns the output width of the layer
+	virtual size_type outputwidth() const;
+	//returns the output height of the layer
+	virtual size_type outputheight() const;
+
+	//evaluates the output of a layer
+	virtual math::matrix evaluate(const math::matrix& input) const;
+
+protected:
+	//returns a pointer to a dynamically allocated copy of the object
+	virtual std::unique_ptr<layer> clone() const;
+	//dynamically allocates any memory the layer needs within a minibatch
+	virtual void* allocateminibatch() const;
+	//deallocates this memory
+	virtual void deallocateminibatch(void* minibatchptr) const;
+	//dynamically allocates any memory the layer needs within a training iteration
+	virtual void* allocateiteration() const;
+	//deallocates this memory
+	virtual void deallocateiteration(void* iterationptr) const;
+
+	//updates our neuralnet given a pointer to the data accumalated over the minibatch, and a learning rate
+	virtual void update(void* minibatchptr, math::num learningrate);
+	//evaluates the output of a layer, and prepares for a backprop
+	virtual void feedforward(const math::matrix& input, math::matrix& output, void* iterationptr, void* minibatchptr) const;
+	//backpropagates the error through our network, and prepares for an update
+	virtual void backprop(const math::matrix& errorin, math::matrix& errorout, void* iterationptr, void* minibatchptr) const;
+	//evaluates the output of a layer, and writes that output to a buffer
+	virtual void evaluate(const math::matrix& input, math::matrix& output) const;
+
+private:
+	math::matrix _data;
+};
+
+//this layer applies a bias matrix
+class biases : public layer {
+public:
+	//initializes a sigmoid layer with a height and width
+	biases(size_type height, size_type width);
+
+	//returns the input width of the layer
+	virtual size_type inputwidth() const;
+	//returns the input height of the layer
+	virtual size_type inputheight() const;
+	//returns the output width of the layer
+	virtual size_type outputwidth() const;
+	//returns the output height of the layer
+	virtual size_type outputheight() const;
+
+	//evaluates the output of a layer
+	virtual math::matrix evaluate(const math::matrix& input) const;
+
+protected:
+	//returns a pointer to a dynamically allocated copy of the object
+	virtual std::unique_ptr<layer> clone() const;
+	//dynamically allocates any memory the layer needs within a minibatch
+	virtual void* allocateminibatch() const;
+	//deallocates this memory
+	virtual void deallocateminibatch(void* minibatchptr) const;
+	//dynamically allocates any memory the layer needs within a training iteration
+	virtual void* allocateiteration() const;
+	//deallocates this memory
+	virtual void deallocateiteration(void* iterationptr) const;
+
+	//updates our neuralnet given a pointer to the data accumalated over the minibatch, and a learning rate
+	virtual void update(void* minibatchptr, math::num learningrate);
+	//evaluates the output of a layer, and prepares for a backprop
+	virtual void feedforward(const math::matrix& input, math::matrix& output, void* iterationptr, void* minibatchptr) const;
+	//backpropagates the error through our network, and prepares for an update
+	virtual void backprop(const math::matrix& errorin, math::matrix& errorout, void* iterationptr, void* minibatchptr) const;
+	//evaluates the output of a layer, and writes that output to a buffer
+	virtual void evaluate(const math::matrix& input, math::matrix& output) const;
+
+private:
+	math::matrix _data;
 };
 
 }
