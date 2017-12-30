@@ -133,9 +133,9 @@ public:
 	//the second argument is a function that takes the real output and the nn output
 	//and returns true if the output is deemed "correct",
 	//as well as a buffer the size of the output matrix that can be written into if needs be
-	data::size_type test(const data& input, std::function<bool(const math::matrix& correct, const math::matrix& output, math::matrix& buffer)> compare = math::matrix::comparemax) const;
+	data::size_type test(const data& input, std::function<bool(const math::matrix& correct, const math::matrix& output, math::matrix& buffer)> compare) const;
 	//returns the average cost over a dataset
-	math::num cost(const data& input, std::function<math::num(const math::matrix& correct, const math::matrix& output)> cost = math::matrix::quadraticcost);
+	math::num cost(const data& input, std::function<math::num(const math::matrix& correct, const math::matrix& output)> cost);
 
 private:
 	std::vector<std::unique_ptr<layer>> _data;

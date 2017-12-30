@@ -12,7 +12,6 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-#include "stdafx.h" 
 #include "nn.h"
 
 #include <stdexcept>
@@ -104,8 +103,8 @@ const std::pair<math::matrix, math::matrix>& data::operator[](data::size_type el
 }
 
 std::vector<std::pair<math::matrix, math::matrix>> data::mnisttestload() {
-	std::ifstream images("t10k-images.idx3-ubyte", std::ios::binary);
-	std::ifstream labels("t10k-labels.idx1-ubyte", std::ios::binary);
+	std::ifstream images("./../data/mnist/t10k-images.idx3-ubyte", std::ios::binary);
+	std::ifstream labels("./../data/mnist/t10k-labels.idx1-ubyte", std::ios::binary);
 
 #ifdef _DEBUG
 	if (!images.is_open() || !labels.is_open()) {
@@ -131,8 +130,8 @@ std::vector<std::pair<math::matrix, math::matrix>> data::mnisttestload() {
 }
 
 std::vector<std::pair<math::matrix, math::matrix>> data::mnisttrainload() {
-	std::ifstream images("train-images.idx3-ubyte", std::ios::binary);
-	std::ifstream labels("train-labels.idx1-ubyte", std::ios::binary);
+	std::ifstream images("./../data/mnist/train-images.idx3-ubyte", std::ios::binary);
+	std::ifstream labels("./../data/mnist/train-labels.idx1-ubyte", std::ios::binary);
 
 #ifdef _DEBUG
 	if (!images.is_open() || !labels.is_open()) {

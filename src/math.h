@@ -111,10 +111,12 @@ public:
 	static void hadamard(const matrix& lhs, const matrix& rhs, matrix& buffer);
 	//returns true if the max element in lhs has the same position as the max element in rhs
 	//doesnt do anything with buffer
-	static bool comparemax(const matrix& lhs, const matrix& rhs, matrix& buffer = matrix());
+	static bool comparemax(const matrix& lhs, const matrix& rhs, matrix& buffer);
+	static bool comparemax(const matrix& lhs, const matrix& rhs) { matrix m; return comparemax(lhs, rhs, m);}
 	//takes single element matricies for bool comparision
 	//first argument must be either 0 or 1
-	static bool comparebool(const matrix& correct, const matrix& totest, matrix& buffer = matrix());
+	static bool comparebool(const matrix& correct, const matrix& totest, matrix& buffer);
+	static bool comparebool(const matrix& correct, const matrix& totest) {matrix m; return comparebool(correct, totest, m);};
 	//finds the quadratic cost of two vectors
 	static num quadraticcost(const math::matrix& y, const math::matrix& aL);
 
@@ -130,7 +132,7 @@ private:
 	size_type _width;
 
 	//seperate dotproduct function for matrix multiplication
-	static matrix::num dotproduct(const matrix& first, const matrix& second, matrix::size_type row, matrix::size_type column);
+	static num dotproduct(const matrix& first, const matrix& second, matrix::size_type row, matrix::size_type column);
 };
 
 //returns a randomly initialized instance of the default random engine
