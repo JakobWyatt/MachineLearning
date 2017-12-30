@@ -1,13 +1,22 @@
-all: libml.a
+CXX=g++
+CPPFLAGS=-g -std=c++17 -c $(shell root-config --cflags)
 
-libml.a: math.o nn.o
-	ar rcs bin/linux/libml.a bin/linux/math.o bin/linux/nn.o
+SRCDIR=./src/
+OBJDIR=./bin/linux/
+
+SRCS=/math.cpp /nn.cpp
+OBJS=$(subst .cpp,.o,$(SRCS))
+
+all: clean libml.a
+
+libml.a: $(subst /,,$(OBJS))
+	ar rcs $(OBJDIR)libdnn.a $(subst /,$(OBJDIR),$(OBJS))
 
 nn.o:
-	g++ -g -std=c++17 -c src/nn.cpp -o bin/linux/nn.o
+	$(CXX) $(CPPFLAGS) $(SRCDIR)nn.cpp -o $(OBJDIR)nn.o
 
 math.o:
-	g++ -g -std=c++17 -c src/math.cpp -o bin/linux/math.o
+	$(CXX) $(CPPFLAGS) $(SRCDIR)math.cpp -o $(OBJDIR)math.o
 
 clean:
-	rm -rf ./bin/linux/*
+	rm -rf $(OBJDIR)*
